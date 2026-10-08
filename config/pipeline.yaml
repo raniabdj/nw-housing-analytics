@@ -1,0 +1,53 @@
+# North West Housing & Interest Rates — pipeline configuration
+# Every value here can be changed without touching code.
+
+region_name: "North West England"
+focus_district: "LIVERPOOL"          # district highlighted in the report and dashboard
+start_year: 2018                     # first year of sales to load (gives a pre-pandemic baseline)
+baseline_year: 2019                  # "normal market" year used for before/after comparisons
+
+# Land Registry "County" values that make up the North West region.
+# (Cumbria was split into Cumberland / Westmorland and Furness in April 2023.)
+counties:
+  - MERSEYSIDE
+  - GREATER MANCHESTER
+  - LANCASHIRE
+  - BLACKBURN WITH DARWEN
+  - BLACKPOOL
+  - CHESHIRE EAST
+  - CHESHIRE WEST AND CHESTER
+  - HALTON
+  - WARRINGTON
+  - CUMBRIA
+  - CUMBERLAND
+  - WESTMORLAND AND FURNESS
+
+land_registry:
+  base_url: "https://price-paid-data.publicdata.landregistry.gov.uk"
+  yearly_file: "pp-{year}.csv"
+  monthly_file: "pp-monthly-update-new-version.csv"
+  chunk_rows: 250000                 # rows per chunk when streaming the national files
+
+bank_of_england:
+  url: "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp"
+  # series code -> column name in the warehouse
+  series:
+    IUDBEDR: bank_rate                     # Official Bank Rate (daily)
+    IUMBV34: mortgage_2y_fixed_75ltv       # 2-year fixed mortgage, 75% LTV (monthly)
+
+postcodes:
+  base_url: "https://api.postcodes.io"
+  pause_seconds: 0.05                # be polite to the free API
+
+mortgage_assumptions:
+  loan_to_value: 0.75
+  term_years: 25
+
+quality:
+  max_missing_postcode_share: 0.02
+  outlier_min_price: 10000
+  outlier_max_price: 5000000
+
+paths:
+  data_dir: "data"
+  site_dir: "site"

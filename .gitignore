@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# pipeline outputs (rebuilt by the pipeline; published via GitHub Releases/Pages)
+data/
+data_demo/
+site/
+
+# Power BI
+*.pbix.bak

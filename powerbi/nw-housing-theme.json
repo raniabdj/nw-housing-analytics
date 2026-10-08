@@ -1,0 +1,53 @@
+{
+  "name": "NW Housing",
+  "dataColors": ["#2A78D6", "#EB6834", "#1BAF7A", "#EDA100", "#E87BA4", "#008300", "#4A3AA7", "#E34948"],
+  "background": "#FCFCFB",
+  "foreground": "#0B0B0B",
+  "tableAccent": "#2A78D6",
+  "good": "#1B7F3B",
+  "neutral": "#A15C00",
+  "bad": "#C0352B",
+  "maximum": "#1C5CAB",
+  "center": "#F0EFEC",
+  "minimum": "#E34948",
+  "textClasses": {
+    "title": { "fontFace": "Segoe UI Semibold", "fontSize": 13, "color": "#0B0B0B" },
+    "header": { "fontFace": "Segoe UI Semibold", "fontSize": 12, "color": "#52514E" },
+    "label": { "fontFace": "Segoe UI", "fontSize": 10, "color": "#52514E" },
+    "callout": { "fontFace": "Segoe UI Semibold", "fontSize": 26, "color": "#0B0B0B" }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "border": [{ "show": true, "color": { "solid": { "color": "#E4E2DC" } }, "radius": 8 }],
+        "visualHeader": [{ "show": false }],
+        "dropShadow": [{ "show": false }],
+        "padding": [{ "top": 12, "bottom": 12, "left": 12, "right": 12 }]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#F4F3F0" } }, "transparency": 0 }]
+      }
+    },
+    "lineChart": {
+      "*": {
+        "lineStyles": [{ "strokeWidth": 2 }],
+        "valueAxis": [{ "gridlineColor": { "solid": { "color": "#EBE9E4" } }, "gridlineStyle": "solid" }],
+        "categoryAxis": [{ "gridlineShow": false }]
+      }
+    },
+    "columnChart": {
+      "*": {
+        "valueAxis": [{ "gridlineColor": { "solid": { "color": "#EBE9E4" } }, "gridlineStyle": "solid" }]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [{ "fontSize": 26, "color": { "solid": { "color": "#0B0B0B" } } }],
+        "categoryLabels": [{ "fontSize": 10, "color": { "solid": { "color": "#52514E" } } }]
+      }
+    }
+  }
+}

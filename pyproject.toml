@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nwhousing"
+version = "1.0.0"
+description = "North West England housing market & interest rates: automated ETL, DuckDB star schema, statistics and reporting"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Rania Boudjemadi" }]
+license = { text = "MIT" }
+dependencies = [
+    "pandas>=2.1",
+    "pyarrow>=14",
+    "duckdb>=1.0",
+    "requests>=2.31",
+    "PyYAML>=6.0",
+    "statsmodels>=0.14",
+    "numpy>=1.26",
+    "Jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "requests-mock>=1.11"]
+
+[project.scripts]
+nwhousing = "nwhousing.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+nwhousing = ["sql/*.sql", "templates/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

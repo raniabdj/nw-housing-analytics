@@ -1,0 +1,102 @@
+name: Monthly data refresh
+
+# HM Land Registry publishes Price Paid Data on the 20th working day of each
+# month (usually the last days of the month). Running on the 3rd picks up the
+# new release reliably. Use "Run workflow" to trigger it manually.
+on:
+  schedule:
+    - cron: "0 6 3 * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Pipeline mode"
+        type: choice
+        options: [auto, incremental, refresh, backfill]
+        default: auto
+
+permissions:
+  contents: write      # update the release that stores pipeline state and gold files
+  pages: write         # publish the report
+  id-token: write
+
+concurrency:
+  group: monthly-refresh
+  cancel-in-progress: false
+
+env:
+  STATE_TAG: pipeline-state
+  DATA_TAG: data-latest
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      # The silver table, outcode cache and run history live in a GitHub release
+      # between runs, so each month only the change file needs downloading.
+      - name: Restore pipeline state
+        run: |
+          mkdir -p data
+          if gh release download "$STATE_TAG" -p state.tar.gz -D /tmp; then
+            tar -xzf /tmp/state.tar.gz -C data
+            echo "Restored state:"; ls -R data | head -20
+          else
+            echo "No saved state yet: the first run will backfill."
+          fi
+
+      - name: Run pipeline
+        run: python -m nwhousing run --mode "${{ inputs.mode || 'auto' }}"
+
+      - name: Save pipeline state
+        run: |
+          tar -czf /tmp/state.tar.gz -C data silver bronze/postcodes run_state.json
+          gh release view "$STATE_TAG" >/dev/null 2>&1 || \
+            gh release create "$STATE_TAG" --title "Pipeline state (internal)" \
+              --notes "Internal state used by the monthly workflow. Not for direct use." --prerelease
+          gh release upload "$STATE_TAG" /tmp/state.tar.gz --clobber
+
+      # Gold tables are published as release assets. Power BI reads them over HTTPS,
+      # so the dashboard refreshes from the pipeline's output with no gateway.
+      - name: Publish gold data
+        run: |
+          gh release view "$DATA_TAG" >/dev/null 2>&1 || \
+            gh release create "$DATA_TAG" --title "Latest gold data" \
+              --notes "Analysis-ready tables refreshed monthly by the pipeline. Contains HM Land Registry data © Crown copyright and database right. Licensed under the Open Government Licence v3.0."
+          gh release upload "$DATA_TAG" data/gold/*.parquet data/gold/*.csv --clobber
+
+      - name: Job summary
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json, pandas as pd
+          run = json.load(open("data/run_state.json"))["runs"][-1]
+          h = pd.read_csv("data/gold/analysis_headlines.csv").set_index("metric")["value"]
+          dq = pd.read_csv("data/gold/dq_results.csv")
+          print(f"### Pipeline {run['status']} ({run['mode']}, {run['seconds']}s)")
+          print(f"- Sales data complete to **{h['data_through']}**, {int(float(h['total_sales_loaded'])):,} sales loaded")
+          print(f"- Data quality: {int(dq.passed.sum())}/{len(dq)} checks passed")
+          EOF
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: refresh
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

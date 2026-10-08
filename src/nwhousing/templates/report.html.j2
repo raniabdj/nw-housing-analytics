@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>North West Housing & Rates</title>
+<meta name="description" content="How interest rates reshaped the North West England housing market: an automated pipeline on HM Land Registry and Bank of England data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb; --surface-2: #f4f3f0; --border: #e4e2dc;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+  --series-1: #2a78d6; --series-1-soft: #9ec5f4; --series-1-fill: rgba(42,120,214,0.10);
+  --series-2: #eb6834; --muted-mark: #bdbbb4; --provisional: #dcdad4;
+  --grid: #ebe9e4; --axis: #b9b7b0; --band: rgba(82,81,78,0.06);
+  --good: #1b7f3b; --warn: #a15c00; --bad: #c0352b; --demo: #fff3cd; --demo-text: #6b4e00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #1a1a19; --surface-2: #232321; --border: #34342f;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #94938a;
+    --series-1: #3987e5; --series-1-soft: #1c5cab; --series-1-fill: rgba(57,135,229,0.16);
+    --series-2: #d95926; --muted-mark: #5b5a55; --provisional: #3a3a36;
+    --grid: #2c2c29; --axis: #5b5a55; --band: rgba(255,255,255,0.05);
+    --good: #5cc27f; --warn: #e0a24a; --bad: #ef7a70; --demo: #3d3214; --demo-text: #f3d68a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19; --surface-2: #232321; --border: #34342f;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #94938a;
+  --series-1: #3987e5; --series-1-soft: #1c5cab; --series-1-fill: rgba(57,135,229,0.16);
+  --series-2: #d95926; --muted-mark: #5b5a55; --provisional: #3a3a36;
+  --grid: #2c2c29; --axis: #5b5a55; --band: rgba(255,255,255,0.05);
+  --good: #5cc27f; --warn: #e0a24a; --bad: #ef7a70; --demo: #3d3214; --demo-text: #f3d68a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface); color: var(--text-primary);
+       font: 16px/1.6 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+header { padding: 56px 0 24px; border-bottom: 1px solid var(--border); }
+.eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; font-size: clamp(30px, 5vw, 44px);
+     line-height: 1.15; margin: 8px 0 12px; letter-spacing: -0.01em; max-width: 22ch; }
+.lede { font-size: 18px; color: var(--text-secondary); max-width: 64ch; margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; font-size: 14px; color: var(--text-muted); }
+.meta a { color: var(--series-1); text-decoration: none; font-weight: 500; }
+.meta a:hover { text-decoration: underline; }
+.demo { background: var(--demo); color: var(--demo-text); padding: 12px 16px; border-radius: 8px; margin: 20px 0 0; font-size: 14px; }
+section { padding: 40px 0 8px; }
+h2 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; }
+.sub { color: var(--text-secondary); margin: 0 0 18px; max-width: 70ch; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 28px; }
+.kpi { background: var(--surface-2); border-radius: 10px; padding: 16px; }
+.kpi .label { font-size: 13px; color: var(--text-secondary); }
+.kpi .value { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+.kpi .delta { font-size: 13px; color: var(--text-muted); }
+.kpi .delta b { color: var(--text-primary); font-weight: 600; }
+.findings { margin: 0; padding: 0; list-style: none; counter-reset: f; display: grid; gap: 14px; }
+.findings li { counter-increment: f; padding-left: 40px; position: relative; color: var(--text-primary); max-width: 78ch; }
+.findings li::before { content: counter(f); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%;
+                       background: var(--series-1-fill); color: var(--series-1); font-weight: 600; font-size: 13px;
+                       display: grid; place-items: center; }
+.card { border: 1px solid var(--border); border-radius: 12px; padding: 16px 16px 8px; margin-bottom: 16px; background: var(--surface); }
+.card h3 { margin: 0 0 2px; font-size: 16px; font-weight: 600; }
+.card p.note { margin: 0 0 8px; font-size: 14px; color: var(--text-secondary); }
+.chart { width: 100%; height: 320px; }
+.chart.short { height: 220px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+td.num, th.num { text-align: right; }
+tr.focus td { font-weight: 600; }
+.status { font-weight: 600; font-size: 13px; }
+.status.Pass { color: var(--good); } .status.Warning { color: var(--warn); } .status.Fail { color: var(--bad); }
+.status::before { margin-right: 6px; }
+.status.Pass::before { content: "✓"; } .status.Warning::before { content: "!"; } .status.Fail::before { content: "✕"; }
+details { border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-top: 12px; }
+summary { cursor: pointer; font-weight: 500; }
+.scroll { overflow-x: auto; }
+.method { columns: 2; column-gap: 32px; font-size: 15px; color: var(--text-secondary); }
+.method p { margin: 0 0 12px; break-inside: avoid; }
+.method b { color: var(--text-primary); }
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; margin: 8px 0 20px; }
+.flow span { background: var(--surface-2); border-radius: 6px; padding: 6px 10px; }
+.flow i { color: var(--text-muted); font-style: normal; }
+footer { border-top: 1px solid var(--border); margin-top: 48px; padding: 24px 0 48px; font-size: 13px; color: var(--text-muted); }
+footer a { color: var(--text-secondary); }
+@media (max-width: 820px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .grid2 { grid-template-columns: 1fr; }
+  .method { columns: 1; }
+}
+@media (max-width: 420px) { .kpi .value { font-size: 22px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Housing market analysis · {{ region }}</div>
+    <h1>How interest rates reshaped the North West housing market</h1>
+    <p class="lede">An automated data pipeline that pulls every registered home sale in {{ region }} from HM Land Registry,
+      joins it to Bank of England interest rates, and refreshes this analysis every month.</p>
+    <div class="meta">
+      <span>Sales data complete to <b>{{ h.data_through }}</b></span>
+      <span>{{ "{:,}".format(h.total_sales_loaded|int) }} sales analysed</span>
+      <span>Updated {{ generated }}</span>
+      <a href="https://github.com/raniabdj/nw-housing-analytics">Source code on GitHub</a>
+    </div>
+    {% if h.is_demo %}
+    <div class="demo"><b>Demo data.</b> This report was generated from synthetic data that imitates the real sources' format.
+      The figures are illustrative only. Run the pipeline without <code>--demo</code> for real results.</div>
+    {% endif %}
+    <div class="kpis">
+      {% for k in kpis %}
+      <div class="kpi">
+        <div class="label">{{ k.label }}</div>
+        <div class="value">{{ k.value }}</div>
+        <div class="delta"><b>{{ k.delta }}</b> {{ k.delta_label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <h2>Key findings</h2>
+    <p class="sub">Generated automatically from the latest data on every run.</p>
+    <ol class="findings">
+      {% for f in findings %}<li>{{ f }}</li>{% endfor %}
+    </ol>
+  </section>
+
+  <section>
+    <h2>Fewer sales as rates rose</h2>
+    <p class="sub">Monthly registered sales (top) and interest rates (bottom) on the same timeline. The last three months
+      are provisional because sales take two to three months to be registered.</p>
+    <div class="card">
+      <h3>Sales registered per month</h3>
+      <div id="volume" class="chart"></div>
+    </div>
+    <div class="card">
+      <h3>Bank Rate and 2-year fixed mortgage rate</h3>
+      <div id="rates" class="chart short"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How strongly do sales react to rates?</h2>
+    <p class="sub">A regression of monthly sales on Bank Rate at different time lags, controlling for seasonality, trend, the 2020 lockdown
+      and the stamp duty holiday. The highlighted point is the lag that best fits the data; bars are 95% confidence intervals
+      (Newey-West standard errors). It shows an association, not proof that rates alone caused the change.</p>
+    <div class="card">
+      <h3>Change in monthly sales for each +1 percentage point of Bank Rate</h3>
+      <div id="lags" class="chart"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Prices held up, but borrowing got expensive</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Price index: raw median vs mix-adjusted</h3>
+        <p class="note">The mix-adjusted index strips out changes in what kind of homes sold.</p>
+        <div id="index" class="chart"></div>
+      </div>
+      <div class="card">
+        <h3>Monthly repayment on the median home</h3>
+        <p class="note">{{ payment_note }}</p>
+        <div id="payment" class="chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the market has and hasn't recovered</h2>
+    <p class="sub">Latest 12 complete months compared with {{ baseline_year }}, the last normal pre-pandemic year. {{ focus }} is highlighted.</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>Sales change by district</h3>
+        <div id="seg_district_vol" class="chart" style="height:auto"></div>
+      </div>
+      <div class="card">
+        <h3>Median price change by district</h3>
+        <div id="seg_district_price" class="chart" style="height:auto"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Sales change by property type</h3>
+        <div id="seg_type" class="chart" style="height:auto"></div>
+      </div>
+      <div class="card">
+        <h3>What drives price (holding everything else equal)</h3>
+        <p class="note">Coefficients from the hedonic regression, 95% CI.</p>
+        <div id="drivers" class="chart" style="height:auto"></div>
+      </div>
+    </div>
+    <details>
+      <summary>District table</summary>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>District</th><th class="num">Sales / month {{ baseline_year }}</th><th class="num">Sales / month now</th>
+          <th class="num">Change</th><th class="num">Median {{ baseline_year }}</th><th class="num">Median now</th><th class="num">Change</th></tr></thead>
+        <tbody>
+        {% for r in seg_table %}
+          <tr class="{{ 'focus' if r.segment|upper == focus|upper else '' }}">
+            <td>{{ r.segment }}</td><td class="num">{{ "{:,.0f}".format(r.baseline_sales_per_month) }}</td>
+            <td class="num">{{ "{:,.0f}".format(r.latest_sales_per_month) }}</td><td class="num">{{ pct(r.volume_change) }}</td>
+            <td class="num">{{ gbp(r.baseline_median_price) }}</td><td class="num">{{ gbp(r.latest_median_price) }}</td>
+            <td class="num">{{ pct(r.price_change) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>How this is built</h2>
+    <div class="flow">
+      <span>Land Registry · Bank of England · postcodes.io APIs</span><i>→</i>
+      <span>Bronze: raw filtered extracts + lineage manifest</span><i>→</i>
+      <span>Silver: typed, deduplicated, CDC-merged</span><i>→</i>
+      <span>Quality gate</span><i>→</i>
+      <span>Gold: DuckDB star schema</span><i>→</i>
+      <span>Statistics</span><i>→</i>
+      <span>This report + Power BI</span>
+    </div>
+    <div class="method">
+      <p><b>Schedule.</b> GitHub Actions runs the pipeline monthly after Land Registry's publication (the 20th working day).
+        Each run applies the monthly change file: additions, corrections and deletions are merged by transaction ID.
+        If a month was missed, the run re-pulls the last two yearly files instead.</p>
+      <p><b>Analysis population.</b> Standard-price residential sales (PPD category A), excluding "other" property types and
+        prices outside £10k to £5m. Registrations lag completions, so the latest three months are provisional and excluded from statistics.</p>
+      <p><b>Mix-adjusted index.</b> OLS of log price on month, district, property type, new-build and tenure. It is fitted on
+        cell-level means weighted by sales count, which gives identical coefficients to the full model at a fraction of the cost.</p>
+      <p><b>Rate sensitivity.</b> OLS of log monthly sales on Bank Rate lagged 0 to 9 months, with month-of-year effects,
+        a trend and policy dummies. The lag is chosen by AIC; HAC standard errors account for autocorrelation.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Data quality checks</h2>
+    <p class="sub">Run before anything is loaded to the warehouse. A failed "error" check stops the pipeline.</p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Check</th><th>Result</th><th>Observed</th><th>Expectation</th></tr></thead>
+      <tbody>
+      {% for r in dq %}
+        <tr><td>{{ r.dataset }}.{{ r.check }}</td><td><span class="status {{ r.status }}">{{ r.status }}</span></td>
+          <td>{{ r.observed }}</td><td>{{ r.expectation }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Built by Rania Boudjemadi · Python, DuckDB, SQL, statsmodels, Plotly, GitHub Actions, Power BI.<br>
+    Contains HM Land Registry data © Crown copyright and database right {{ year }}. This data is licensed under the
+    <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open Government Licence v3.0</a>.
+    Interest rate data: Bank of England Database. Postcode coordinates: postcodes.io (ONS / Ordnance Survey data, OGL).
+  </div>
+</footer>
+
+<script>
+const FIGS = {{ figures | safe }};
+function tokens() {
+  const cs = getComputedStyle(document.documentElement);
+  return name => cs.getPropertyValue("--" + name).trim() || name;
+}
+function resolve(obj, tok) {
+  if (typeof obj === "string" && obj.startsWith("var:")) return tok(obj.slice(4));
+  if (Array.isArray(obj)) return obj.map(v => resolve(v, tok));
+  if (obj && typeof obj === "object") {
+    const out = {};
+    for (const k in obj) out[k] = resolve(obj[k], tok);
+    return out;
+  }
+  return obj;
+}
+function draw() {
+  const tok = tokens();
+  for (const [id, fig] of Object.entries(FIGS)) {
+    const el = document.getElementById(id);
+    if (!el || !window.Plotly) continue;
+    const f = resolve(fig, tok);
+    f.layout.hoverlabel = { bgcolor: tok("surface"), bordercolor: tok("border"), font: { color: tok("text-primary") } };
+    Plotly.react(el, f.data, f.layout, { displayModeBar: false, responsive: true });
+  }
+}
+draw();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+</body>
+</html>

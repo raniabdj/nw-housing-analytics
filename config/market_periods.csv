@@ -1,0 +1,6 @@
+period_order,market_period,start_month,end_month,description
+1,Pre-pandemic,2000-01-01,2020-02-01,"Bank Rate 0.75%, normal market"
+2,Pandemic & stamp duty holiday,2020-03-01,2021-09-01,"Rate cut to 0.1%; SDLT holiday 8 Jul 2020 to 30 Sep 2021"
+3,Rates rising,2021-10-01,2023-07-01,"First rise 16 Dec 2021; 14 consecutive rises"
+4,Rates at peak,2023-08-01,2024-07-01,"Bank Rate held at 5.25%"
+5,Rates falling,2024-08-01,2099-12-01,"Cutting cycle from 1 Aug 2024"

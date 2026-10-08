@@ -1,0 +1,132 @@
+// =====================================================================
+// DAX measures — North West Housing & Interest Rates
+// Create a table called _Measures (Enter data > one empty column) and add
+// each measure below to it. Display folders are given in brackets.
+// =====================================================================
+
+// ---------- [1 Volume] ----------
+Sales =
+CALCULATE ( COUNTROWS ( fact_sales ), fact_sales[in_analysis] = TRUE () )
+
+Sales (All Registered) =
+COUNTROWS ( fact_sales )
+
+Months in Context =
+CALCULATE ( DISTINCTCOUNT ( fact_sales[sale_month] ), fact_sales[in_analysis] = TRUE () )
+
+Sales per Month =
+DIVIDE ( [Sales], [Months in Context] )
+
+Sales per Month (Baseline 2019) =
+CALCULATE ( [Sales per Month], REMOVEFILTERS ( dim_date ), dim_date[year] = 2019 )
+
+Sales vs 2019 % =
+DIVIDE ( [Sales per Month], [Sales per Month (Baseline 2019)] ) - 1
+
+Sales PY =
+CALCULATE ( [Sales], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+
+Sales YoY % =
+DIVIDE ( [Sales] - [Sales PY], [Sales PY] )
+
+Sales 3M Rolling Avg =
+VAR LastDay = MAX ( dim_date[date] )
+RETURN
+    CALCULATE (
+        [Sales per Month],
+        DATESINPERIOD ( dim_date[date], LastDay, -3, MONTH )
+    )
+
+New Build Share =
+DIVIDE ( CALCULATE ( [Sales], fact_sales[is_new_build] = TRUE () ), [Sales] )
+
+// ---------- [2 Price] ----------
+Median Price =
+CALCULATE ( MEDIAN ( fact_sales[price] ), fact_sales[in_analysis] = TRUE () )
+
+Average Price =
+CALCULATE ( AVERAGE ( fact_sales[price] ), fact_sales[in_analysis] = TRUE () )
+
+Median Price PY =
+CALCULATE ( [Median Price], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+
+Median Price YoY % =
+DIVIDE ( [Median Price] - [Median Price PY], [Median Price PY] )
+
+Median Price (Baseline 2019) =
+CALCULATE ( [Median Price], REMOVEFILTERS ( dim_date ), dim_date[year] = 2019 )
+
+Median Price vs 2019 % =
+DIVIDE ( [Median Price], [Median Price (Baseline 2019)] ) - 1
+
+Median Price vs Region % =
+DIVIDE ( [Median Price], CALCULATE ( [Median Price], REMOVEFILTERS ( dim_district ), REMOVEFILTERS ( dim_outcode ) ) ) - 1
+
+// ---------- [3 Rates & affordability] ----------
+Bank Rate % =
+AVERAGE ( fact_rates_monthly[bank_rate_month_end] )
+
+Mortgage Rate 2Y Fixed % =
+AVERAGE ( fact_rates_monthly[mortgage_2y_fixed_75ltv] )
+
+Monthly Repayment (Median Home) =
+// 75% loan-to-value, 25-year repayment mortgage at the 2-year fixed rate
+VAR Loan = [Median Price] * 0.75
+VAR r = [Mortgage Rate 2Y Fixed %] / 1200
+VAR n = 25 * 12
+RETURN
+    IF ( r > 0, Loan * r / ( 1 - ( 1 + r ) ^ ( -n ) ) )
+
+Monthly Repayment 2021 =
+CALCULATE ( [Monthly Repayment (Median Home)], REMOVEFILTERS ( dim_date ), dim_date[year] = 2021 )
+
+Monthly Repayment vs 2021 % =
+DIVIDE ( [Monthly Repayment (Median Home)], [Monthly Repayment 2021] ) - 1
+
+// ---------- [4 Latest period / KPI cards] ----------
+Latest Complete Month =
+CALCULATE ( MAX ( dim_date[month_start] ), REMOVEFILTERS ( dim_date ), dim_date[is_complete_month] = TRUE () )
+
+Last 12M Median Price =
+VAR EndDate = EOMONTH ( [Latest Complete Month], 0 )
+RETURN
+    CALCULATE ( [Median Price], REMOVEFILTERS ( dim_date ),
+        DATESINPERIOD ( dim_date[date], EndDate, -12, MONTH ) )
+
+Last 12M Sales =
+VAR EndDate = EOMONTH ( [Latest Complete Month], 0 )
+RETURN
+    CALCULATE ( [Sales], REMOVEFILTERS ( dim_date ),
+        DATESINPERIOD ( dim_date[date], EndDate, -12, MONTH ) )
+
+Prior 12M Sales =
+VAR EndDate = EOMONTH ( [Latest Complete Month], -12 )
+RETURN
+    CALCULATE ( [Sales], REMOVEFILTERS ( dim_date ),
+        DATESINPERIOD ( dim_date[date], EndDate, -12, MONTH ) )
+
+Last 12M Sales YoY % =
+DIVIDE ( [Last 12M Sales], [Prior 12M Sales] ) - 1
+
+Bank Rate Latest % =
+VAR LastMonth = CALCULATE ( MAX ( fact_rates_monthly[month] ), REMOVEFILTERS ( dim_date ),
+    NOT ISBLANK ( fact_rates_monthly[bank_rate_month_end] ) )
+RETURN
+    CALCULATE ( [Bank Rate %], REMOVEFILTERS ( dim_date ), fact_rates_monthly[month] = LastMonth )
+
+// ---------- [5 Labels & formatting helpers] ----------
+Data Through Label =
+"Sales complete to " & FORMAT ( [Latest Complete Month], "mmmm yyyy" )
+    & " · latest 3 months provisional (registration lag)"
+
+Sales Bar Colour =
+// Use as conditional formatting (Field value) on the monthly sales column chart
+IF ( SELECTEDVALUE ( dim_date[is_complete_month] ) = FALSE (), "#DCDAD4", "#9EC5F4" )
+
+District Highlight Colour =
+// Conditional formatting for district bar charts: Liverpool highlighted
+IF ( SELECTEDVALUE ( dim_district[district] ) = "LIVERPOOL", "#2A78D6", "#BDBBB4" )
+
+Selected Area Label =
+VAR d = SELECTEDVALUE ( dim_district[district_name] )
+RETURN IF ( ISBLANK ( d ), "North West England", d )
