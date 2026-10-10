@@ -131,7 +131,16 @@ def run(cfg: Config, mode: str = "auto", with_report: bool = True) -> dict:
     try:
         # 1. Extract + transform
         extract_and_transform_sales(cfg, mode)
-        t_rates.build_silver_rates(cfg, boe.extract_rates(cfg))
+        rates_cache = cfg.paths.silver / "rates_monthly.parquet"
+        try:
+            t_rates.build_silver_rates(cfg, boe.extract_rates(cfg))
+        except (boe.BoEUnavailable, requests.RequestException) as exc:
+            # Rates change rarely; reusing last run's table beats failing the whole refresh.
+            # The data quality check `rates_freshness` reports how stale they are.
+            if not rates_cache.exists():
+                raise
+            log.warning("Bank of England unavailable (%s); reusing rates from the previous run", exc)
+            record["rates_from_cache"] = True
         sales = pd.read_parquet(t_sales.silver_path(cfg))
         postcodes.extract_outcodes(cfg, sales["outcode"].dropna().unique().tolist())
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import json
 import logging
+import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -31,6 +32,28 @@ def build_params(series_codes: list[str], start: date, end: date) -> dict:
         "VPD": "Y",
         "VFD": "N",
     }
+
+
+class BoEUnavailable(RuntimeError):
+    """The Bank of England database refused the request (HTML page instead of CSV)."""
+
+
+def fetch_series_csv(url: str, params: dict, session, attempts: int = 4, wait: float = 15) -> str:
+    """The IADB occasionally answers automated requests with an HTML page (rate limit /
+    bot check) instead of CSV. Retry with increasing waits before giving up."""
+    headers = {"Accept": "text/csv,text/plain;q=0.9,*/*;q=0.1"}
+    for attempt in range(1, attempts + 1):
+        resp = session.get(url, params=params, headers=headers, timeout=60)
+        resp.raise_for_status()
+        text = resp.text
+        if not text.lstrip().startswith("<"):
+            return text
+        if attempt < attempts:
+            log.warning("BoE returned HTML for %s (attempt %s/%s); retrying in %.0fs",
+                        params.get("SeriesCodes"), attempt, attempts, wait * attempt)
+            time.sleep(wait * attempt)
+    raise BoEUnavailable(f"BoE returned HTML instead of CSV for {params.get('SeriesCodes')} "
+                         f"after {attempts} attempts")
 
 
 def parse_iadb_csv(text: str, series: dict[str, str]) -> pd.DataFrame:
@@ -64,10 +87,8 @@ def extract_rates(cfg: Config) -> Path:
         frames = []
         session = make_session()
         for code in series:                            # one request per series is more robust
-            text = get_text(cfg["bank_of_england"]["url"],
-                            params=build_params([code], start, end), session=session)
-            if text.lstrip().startswith("<"):
-                raise RuntimeError(f"BoE returned HTML instead of CSV for {code}; check the series code")
+            text = fetch_series_csv(cfg["bank_of_england"]["url"],
+                                    build_params([code], start, end), session)
             frames.append(parse_iadb_csv(text, {code: series[code]}))
         df = pd.concat(frames, ignore_index=True)
 

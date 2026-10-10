@@ -94,6 +94,11 @@ def check_rates(df: pd.DataFrame) -> list[CheckResult]:
         add("bank_rate_range", "error", bool(ok), f"{br.min():.2f}% to {br.max():.2f}%", "0% to 20%")
         gaps = int(df["bank_rate"].isna().sum())
         add("bank_rate_complete", "error", gaps == 0, f"{gaps} empty months", "no empty months")
+        # Rates are reused from the previous run if the BoE is unavailable; flag staleness.
+        last = pd.Timestamp(df.loc[df["bank_rate"].notna(), "month"].max())
+        months_old = (pd.Timestamp.today().to_period("M") - last.to_period("M")).n
+        add("rates_freshness", "warn", months_old <= 1, f"latest rate {last:%b %Y} ({months_old} months old)",
+            "Bank Rate available for this or last month")
     else:
         add("bank_rate_present", "error", False, "missing", "bank_rate column present")
     return r

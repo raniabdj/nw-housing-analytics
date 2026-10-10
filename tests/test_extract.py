@@ -52,3 +52,21 @@ def test_outcode_lookup_ok_and_not_found(cfg, requests_mock):
     calls = requests_mock.call_count
     postcodes.extract_outcodes(cfg, ["L18", "ZZ9"])
     assert requests_mock.call_count == calls
+
+
+def test_boe_retries_when_html_returned(requests_mock):
+    from nwhousing.http import make_session
+    url = "https://example.test/iadb"
+    requests_mock.get(url, [{"text": "<html>busy</html>"}, {"text": "DATE,IUDBEDR\n02 Jan 2024,5.25\n"}])
+    text = boe.fetch_series_csv(url, {"SeriesCodes": "IUDBEDR"}, make_session(), attempts=3, wait=0)
+    assert text.startswith("DATE")
+    assert requests_mock.call_count == 2
+
+
+def test_boe_gives_up_with_clear_error(requests_mock):
+    import pytest
+    from nwhousing.http import make_session
+    url = "https://example.test/iadb"
+    requests_mock.get(url, text="<html>blocked</html>")
+    with pytest.raises(boe.BoEUnavailable):
+        boe.fetch_series_csv(url, {"SeriesCodes": "IUDBEDR"}, make_session(), attempts=2, wait=0)
