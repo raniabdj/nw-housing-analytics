@@ -47,6 +47,7 @@ def build_models(cfg: Config) -> None:
         "term_months": cfg["mortgage_assumptions"]["term_years"] * 12,
         "baseline_year": cfg["baseline_year"],
         "region": cfg["region_name"],
+        "provisional": int(cfg.raw.get("provisional_months", 6)),
     }
     with connect(cfg) as con:
         for sql_file in sorted(SQL_DIR.glob("*.sql")):

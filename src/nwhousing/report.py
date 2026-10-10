@@ -300,6 +300,7 @@ def build(cfg: Config) -> Path:
         focus=focus, region=cfg["region_name"], baseline_year=cfg["baseline_year"],
         generated=datetime.now(timezone.utc).strftime("%d %B %Y, %H:%M UTC"),
         payment_note=figures["payment"]["note"], gbp=gbp, pct=pct, year=datetime.now().year,
+        provisional=int(cfg.raw.get("provisional_months", 6)),
     )
     out = cfg.paths.site_dir / ("index_demo.html" if cfg.demo else "index.html")
     out.write_text(html, encoding="utf-8")

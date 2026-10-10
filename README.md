@@ -104,7 +104,7 @@ erDiagram
 ## Methods
 
 **Analysis population.** Standard-price residential sales (PPD category A), excluding the "Other" property type and prices
-outside £10k–£5m. Registrations lag completions by 2–3 months, so the latest three months are flagged as provisional
+outside £10k–£5m. Registrations lag completions by several months, so the latest 6 months (configurable) are flagged as provisional
 (`is_complete_month = false`) and excluded from the statistics.
 
 **Mix-adjusted price index.** A raw median moves when the *mix* of homes sold changes. The pipeline fits

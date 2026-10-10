@@ -25,11 +25,11 @@ CREATE OR REPLACE TABLE seed_market_events AS
 SELECT * FROM read_csv('{config}/market_events.csv', header = true,
     columns = {{'event_date': 'DATE', 'event': 'VARCHAR', 'category': 'VARCHAR'}});
 
--- Land Registry registrations lag completions by 2-3 months, so the most
--- recent months are provisional. One row holding the cut-off used everywhere.
+-- Land Registry registrations lag completions by several months, so the most
+-- recent {provisional} months are provisional. One row holding the cut-off used everywhere.
 CREATE OR REPLACE TABLE meta_cutoff AS
 SELECT
     max(sale_month)                                   AS latest_month,
-    CAST(max(sale_month) - INTERVAL 3 MONTH AS DATE)  AS last_complete_month,
+    CAST(max(sale_month) - INTERVAL {provisional} MONTH AS DATE) AS last_complete_month,
     min(sale_month)                                   AS first_month
 FROM stg_sales;

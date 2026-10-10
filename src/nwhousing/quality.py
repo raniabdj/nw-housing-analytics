@@ -71,14 +71,16 @@ def check_sales(df: pd.DataFrame, cfg: Config) -> list[CheckResult]:
         missing = [m.strftime("%Y-%m") for m in full.difference(monthly.index)]
         add("no_missing_months", "warn", not missing, f"{len(missing)} missing months",
             "every month between first and last sale has data")
-        # Registrations lag completions by 2-3 months, so the last 3 months are treated
-        # as provisional. Check that the newest "complete" month really looks complete.
-        if len(monthly) > 16:
-            first_complete = monthly.iloc[-4]
-            typical = monthly.iloc[-16:-4].median()
+        # Registrations lag completions, so the last `provisional_months` months are
+        # treated as provisional. Check that the newest "complete" month really looks
+        # complete; if this fails, increase provisional_months in pipeline.yaml.
+        p = int(cfg.raw.get("provisional_months", 6))
+        if len(monthly) > p + 13:
+            first_complete = monthly.iloc[-(p + 1)]
+            typical = monthly.iloc[-(p + 13):-(p + 1)].median()
             add("complete_month_volume", "warn", first_complete >= 0.7 * typical,
-                f"{monthly.index[-4]:%b %Y}: {first_complete:,} vs typical {typical:,.0f}",
-                "newest complete month >= 70% of prior 12-month median")
+                f"{monthly.index[-(p + 1)]:%b %Y}: {first_complete:,} vs typical {typical:,.0f}",
+                f"newest complete month >= 70% of prior 12-month median ({p} provisional months)")
     return r
 
 

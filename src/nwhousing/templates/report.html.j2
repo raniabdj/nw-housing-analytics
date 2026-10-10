@@ -140,8 +140,8 @@ footer a { color: var(--text-secondary); }
 
   <section>
     <h2>Fewer sales as rates rose</h2>
-    <p class="sub">Monthly registered sales (top) and interest rates (bottom) on the same timeline. The last three months
-      are provisional because sales take two to three months to be registered.</p>
+    <p class="sub">Monthly registered sales (top) and interest rates (bottom) on the same timeline. The latest {{ provisional }} months
+      are provisional because sales can take several months to be registered.</p>
     <div class="card">
       <h3>Sales registered per month</h3>
       <div id="volume" class="chart"></div>
@@ -239,7 +239,7 @@ footer a { color: var(--text-secondary); }
         Each run applies the monthly change file: additions, corrections and deletions are merged by transaction ID.
         If a month was missed, the run re-pulls the last two yearly files instead.</p>
       <p><b>Analysis population.</b> Standard-price residential sales (PPD category A), excluding "other" property types and
-        prices outside £10k to £5m. Registrations lag completions, so the latest three months are provisional and excluded from statistics.</p>
+        prices outside £10k to £5m. Registrations lag completions, so the latest {{ provisional }} months are provisional and excluded from statistics.</p>
       <p><b>Mix-adjusted index.</b> OLS of log price on month, district, property type, new-build and tenure. It is fitted on
         cell-level means weighted by sales count, which gives identical coefficients to the full model at a fraction of the cost.</p>
       <p><b>Rate sensitivity.</b> OLS of log monthly sales on Bank Rate lagged 0 to 9 months, with month-of-year effects,
