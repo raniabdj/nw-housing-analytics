@@ -7,8 +7,18 @@ CREATE OR REPLACE MACRO initcap(s) AS array_to_string(
         w -> CASE WHEN w IN ('and', 'with', 'of', 'the', 'upon', 'on') THEN w
                   ELSE upper(w[1]) || w[2:] END), ' ');
 
+-- Local authority boundaries change over time (e.g. Cumbria's six districts became
+-- Cumberland and Westmorland & Furness in April 2023). Map old districts to their
+-- successors so trends compare like with like across the whole period.
+CREATE OR REPLACE TABLE seed_district_mapping AS
+SELECT * FROM read_csv('{config}/district_mapping.csv', header = true, all_varchar = true);
+
 CREATE OR REPLACE VIEW stg_sales AS
-SELECT * FROM read_parquet('{silver}/sales.parquet');
+SELECT s.* REPLACE (
+           coalesce(m.new_district, s.district) AS district,
+           coalesce(m.new_county, s.county)     AS county)
+FROM read_parquet('{silver}/sales.parquet') s
+LEFT JOIN seed_district_mapping m ON s.district = m.old_district;
 
 CREATE OR REPLACE VIEW stg_rates AS
 SELECT * FROM read_parquet('{silver}/rates_monthly.parquet');

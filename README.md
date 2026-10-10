@@ -107,6 +107,9 @@ erDiagram
 outside £10k–£5m. Registrations lag completions by several months, so the latest 6 months (configurable) are flagged as provisional
 (`is_complete_month = false`) and excluded from the statistics.
 
+**Boundary changes.** Cumbria's six districts were replaced by Cumberland and Westmorland & Furness in April 2023.
+Older sales are mapped to the successor councils (`config/district_mapping.csv`), so district trends compare like with like.
+
 **Mix-adjusted price index.** A raw median moves when the *mix* of homes sold changes. The pipeline fits
 `log(price) ~ month + district + property type + new build + tenure` and turns the month effects into an index (2019 = 100).
 The model is fitted on cell means (month × district × type × build × tenure) weighted by sales count rather than on every individual sale. This gives
