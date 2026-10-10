@@ -17,7 +17,23 @@ The project is an end-to-end, scheduled data product built on three public APIs.
 5. **Analyses** it statistically: a mix-adjusted (hedonic) price index and a lagged regression of sales on interest rates
 6. **Publishes** an auto-written HTML report to GitHub Pages and refreshed tables that a **Power BI** dashboard reads directly
 
-<!-- After the first live run, replace this with a screenshot: ![Report](docs/img/report.png) -->
+![Report screenshot 1](docs/img/Screenshot%202026-10-10%20at%2015.28.13.png)
+
+![Report screenshot 2](docs/img/Screenshot%202026-10-10%20at%2015.28.23.png)
+
+![Report screenshot 3](docs/img/Screenshot%202026-10-10%20at%2015.28.32.png)
+
+![Report screenshot 4](docs/img/Screenshot%202026-10-10%20at%2015.28.39.png)
+
+![Report screenshot 5](docs/img/Screenshot%202026-10-10%20at%2015.28.51.png)
+
+![Report screenshot 6](docs/img/Screenshot%202026-10-10%20at%2015.29.04.png)
+
+![Report screenshot 7](docs/img/Screenshot%202026-10-10%20at%2015.29.12.png)
+
+![Report screenshot 8](docs/img/Screenshot%202026-10-10%20at%2015.29.23.png)
+
+![Report screenshot 9](docs/img/Screenshot%202026-10-10%20at%2015.29.27.png)
 
 ---
 
