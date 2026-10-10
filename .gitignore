@@ -12,3 +12,4 @@ site/
 
 # Power BI
 *.pbix.bak
+.DS_Store
